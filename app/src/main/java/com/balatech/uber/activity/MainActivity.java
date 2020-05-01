@@ -7,6 +7,10 @@ import android.os.Bundle;
 import android.view.View;
 
 import com.balatech.uber.R;
+import com.balatech.uber.config.ConfiguracaoFirebase;
+import com.balatech.uber.helper.UsuarioFirebase;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -16,6 +20,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         getSupportActionBar().hide();
+
     }
 
     public void abrirTelaLogin(View view){
@@ -26,5 +31,9 @@ public class MainActivity extends AppCompatActivity {
         startActivity(new Intent(MainActivity.this,CadastroActivity.class));
     }
 
-
+    @Override
+    protected void onStart() {
+        super.onStart();
+        UsuarioFirebase.redirecionaUsuarioLogado(MainActivity.this);
+    }
 }
