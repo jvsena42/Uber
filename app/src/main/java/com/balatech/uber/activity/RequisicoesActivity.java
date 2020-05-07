@@ -2,6 +2,7 @@ package com.balatech.uber.activity;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.os.Bundle;
@@ -11,8 +12,11 @@ import android.view.View;
 import android.widget.TextView;
 
 import com.balatech.uber.R;
+import com.balatech.uber.adapter.RequisicoesAdapter;
 import com.balatech.uber.config.ConfiguracaoFirebase;
+import com.balatech.uber.helper.UsuarioFirebase;
 import com.balatech.uber.model.Requisicao;
+import com.balatech.uber.model.Usuario;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -32,6 +36,8 @@ public class RequisicoesActivity extends AppCompatActivity {
     private FirebaseAuth firebaseAuth;
     private DatabaseReference firebaseRef;
     private List<Requisicao> listRequisicao = new ArrayList<>();
+    private RequisicoesAdapter requisicoesAdapter;
+    private Usuario motorista;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,8 +77,15 @@ public class RequisicoesActivity extends AppCompatActivity {
         textResultado = findViewById(R.id.textResultado);
 
         //Configuracoes iniciais
+        motorista = UsuarioFirebase.getDadosUsuarioLogado();
         firebaseAuth = ConfiguracaoFirebase.getFirebaseAuth();
         firebaseRef = ConfiguracaoFirebase.getFirebaseDatabase();
+
+        //Configurar Recyclerview
+        requisicoesAdapter = new RequisicoesAdapter(listRequisicao,getApplicationContext(),motorista);
+        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getApplicationContext());
+        recyclerRequisicoes.setLayoutManager(layoutManager);
+        recyclerRequisicoes.setAdapter(requisicoesAdapter);
 
         recuperarRequisicoes();
     }
@@ -98,6 +111,8 @@ public class RequisicoesActivity extends AppCompatActivity {
                     Requisicao requisicao = ds.getValue(Requisicao.class);
                     listRequisicao.add(requisicao);
                 }
+
+                requisicoesAdapter.notifyDataSetChanged();
             }
 
             @Override
