@@ -151,6 +151,7 @@ public class RequisicoesActivity extends AppCompatActivity {
                     recyclerRequisicoes.setVisibility(View.GONE);
                 }
 
+                listRequisicao.clear();
                 for (DataSnapshot ds: dataSnapshot.getChildren()){
                     Requisicao requisicao = ds.getValue(Requisicao.class);
                     listRequisicao.add(requisicao);
