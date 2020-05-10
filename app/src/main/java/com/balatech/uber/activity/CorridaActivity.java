@@ -130,6 +130,14 @@ public class CorridaActivity extends AppCompatActivity
 
         LatLngBounds bounds = builder.build();
 
+        int largura = getResources().getDisplayMetrics().widthPixels;
+        int altura = getResources().getDisplayMetrics().heightPixels;
+        int espacoInterno = (int) (largura*0.20);
+
+        mMap.moveCamera(
+                CameraUpdateFactory.newLatLngBounds(bounds,largura,altura,espacoInterno)
+        );
+
     }
 
     private void adicionarMarcadorMotorista(LatLng localizacao, String titulo){
