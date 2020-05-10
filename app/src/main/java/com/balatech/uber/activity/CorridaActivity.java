@@ -68,6 +68,12 @@ public class CorridaActivity extends AppCompatActivity
         if (getIntent().getExtras().containsKey("idRequisicao") && getIntent().getExtras().containsKey("motorista")) {
             Bundle extras = getIntent().getExtras();
             motorista = (Usuario) extras.getSerializable("motorista");
+
+            localMotorista = new LatLng(
+              Double.parseDouble(motorista.getLatitude()),
+              Double.parseDouble(motorista.getLongitude())
+            );
+
             idRequisicao = extras.getString("idRequisicao");
             verificaStatusRequisicao();
         }
@@ -142,7 +148,7 @@ public class CorridaActivity extends AppCompatActivity
 
     private void adicionarMarcadorMotorista(LatLng localizacao, String titulo){
 
-        if (marcadorMotorista != null);
+        if (marcadorMotorista != null)
         marcadorMotorista.remove();
 
         marcadorMotorista = mMap.addMarker(
@@ -156,7 +162,7 @@ public class CorridaActivity extends AppCompatActivity
 
     private void adicionarMarcadorPassageiro(LatLng localizacao, String titulo){
 
-        if (marcadorPassageiro != null);
+        if (marcadorPassageiro != null)
         marcadorPassageiro.remove();
 
         marcadorPassageiro = mMap.addMarker(

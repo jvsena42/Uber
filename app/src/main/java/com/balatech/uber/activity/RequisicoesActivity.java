@@ -65,6 +65,43 @@ public class RequisicoesActivity extends AppCompatActivity {
 
     }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        verificaStatusRequisicao();
+    }
+
+    private void verificaStatusRequisicao(){
+        Usuario usuarioLogado = UsuarioFirebase.getDadosUsuarioLogado();
+        DatabaseReference firebaseRef = ConfiguracaoFirebase.getFirebaseDatabase();
+
+        DatabaseReference requisicoes = firebaseRef.child("requisicoes");
+
+        Query requisicoesPesquisa = requisicoes.orderByChild("motorista/id")
+                .equalTo(usuarioLogado.getId());
+
+        requisicoesPesquisa.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                for (DataSnapshot ds : dataSnapshot.getChildren()){
+
+                    Requisicao requisicao = ds.getValue(Requisicao.class);
+
+                    if (requisicao.getStatus().equals(Requisicao.STATUS_A_CAMINHO)
+                        || requisicao.getStatus().equals(Requisicao.STATUS_VIAGEM)){
+                        abrirTelaCorrida(requisicao.getId(),motorista);
+                    }
+
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+    }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -84,6 +121,13 @@ public class RequisicoesActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void abrirTelaCorrida(String idRequisicao, Usuario motorista){
+        Intent i = new Intent(RequisicoesActivity.this,CorridaActivity.class);
+        i.putExtra("idRequisicao",idRequisicao);
+        i.putExtra("motorista",motorista);
+        startActivity(i);
     }
 
     private void configuracoesIniciais(){
@@ -113,10 +157,7 @@ public class RequisicoesActivity extends AppCompatActivity {
                             @Override
                             public void onItemClick(View view, int position) {
                                 Requisicao requisicao = listRequisicao.get(position);
-                                Intent i = new Intent(RequisicoesActivity.this,CorridaActivity.class);
-                                i.putExtra("idRequisicao",requisicao.getId());
-                                i.putExtra("motorista",motorista);
-                                startActivity(i);
+                                abrirTelaCorrida(requisicao.getId(),motorista);
                             }
 
                             @Override
