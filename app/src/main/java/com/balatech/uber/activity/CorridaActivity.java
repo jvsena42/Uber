@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Bundle;
 
 import com.balatech.uber.config.ConfiguracaoFirebase;
@@ -62,6 +63,7 @@ public class CorridaActivity extends AppCompatActivity
     private Marker marcadorPassageiro;
     private String statusRequisicao;
     private Boolean requisicaoAtiva;
+    private FloatingActionButton fabRota;
 
     //Componente
     private Button buttonAceitarCorrida;
@@ -144,6 +146,7 @@ public class CorridaActivity extends AppCompatActivity
 
     private void requisicaoACaminho(){
         buttonAceitarCorrida.setText("A Caminho");
+        fabRota.setVisibility(View.VISIBLE);
 
         //Exibir marcador do motorista
         adicionarMarcadorMotorista(localMotorista,motorista.getNome());
@@ -345,6 +348,40 @@ public class CorridaActivity extends AppCompatActivity
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+        //adicionar evento de clique no FabRota
+        fabRota = findViewById(R.id.fabRota);
+        fabRota.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String status = statusRequisicao;
+
+                if (status!= null){
+
+                    String lat ="";
+                    String lon = "";
+
+                    switch (status) {
+                        case Requisicao.STATUS_A_CAMINHO:
+                            lat = String.valueOf(localPassageiro.latitude);
+                            lon = String.valueOf(localPassageiro.longitude);
+                            break;
+                        case Requisicao.STATUS_VIAGEM:
+
+                            break;
+                    }
+
+                    //Abrir rota
+                    String latLong = lat + "," + lon;
+                    Uri uri = Uri.parse("google.navigation:q=<"+latLong+">&mode=d");
+                    Intent mapIntent = new Intent(Intent.ACTION_VIEW, uri);
+                    mapIntent.setPackage("com.google.android.apps.maps");
+                    startActivity(mapIntent);
+
+                }
+
+            }
+        });
     }
 
     @Override
