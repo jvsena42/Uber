@@ -105,9 +105,11 @@ public class UsuarioFirebase {
     }
 
     public static void atualizarDadosLocalizacao(double lat, double lon){
-        //Definir nó de localizacao do usuario
-        DatabaseReference localUsuarioRef = ConfiguracaoFirebase.getFirebaseDatabase().child("local_usuario");
-        GeoFire geoFire = new GeoFire(localUsuarioRef);
+
+        //Define nó de local de usuário
+        DatabaseReference localUsuario = ConfiguracaoFirebase.getFirebaseDatabase()
+                .child("local_usuario");
+        GeoFire geoFire = new GeoFire(localUsuario);
 
         //Recuperar dados do usuário logado
         Usuario usuarioLogado = UsuarioFirebase.getDadosUsuarioLogado();

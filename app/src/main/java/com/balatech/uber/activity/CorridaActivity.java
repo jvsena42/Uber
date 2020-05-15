@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -13,11 +14,17 @@ import com.balatech.uber.config.ConfiguracaoFirebase;
 import com.balatech.uber.helper.UsuarioFirebase;
 import com.balatech.uber.model.Requisicao;
 import com.balatech.uber.model.Usuario;
+import com.firebase.geofire.GeoFire;
+import com.firebase.geofire.GeoLocation;
+import com.firebase.geofire.GeoQuery;
+import com.firebase.geofire.GeoQueryEventListener;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.Circle;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
@@ -146,6 +153,65 @@ public class CorridaActivity extends AppCompatActivity
 
         //Centralizar marcadores
         centralizarDoisMarcadores(marcadorMotorista,marcadorPassageiro);
+
+        //Iniciar monitoramento do motorista/passageiro
+        iniciarMonitoramentoCorrida(passageiro,motorista);
+    }
+
+    private void iniciarMonitoramentoCorrida(Usuario p, Usuario m){
+
+        //Inicializar Geofire
+        DatabaseReference localUsuarioRef = ConfiguracaoFirebase.getFirebaseDatabase().child("local_usuario");
+        GeoFire geoFire = new GeoFire(localUsuarioRef);
+
+        //Adicionar círculo no pasageiro
+        final Circle circle = mMap.addCircle(
+                new CircleOptions()
+                .center(localPassageiro)
+                .radius(50)
+                .fillColor(Color.argb(90,255,153,0))
+                .strokeColor(Color.argb(190,255,152,0))
+        );
+
+        final GeoQuery geoQuery = geoFire.queryAtLocation(
+                new GeoLocation(localPassageiro.latitude,localPassageiro.longitude),
+                0.05
+        );
+        geoQuery.addGeoQueryEventListener(new GeoQueryEventListener() {
+            @Override
+            public void onKeyEntered(String key, GeoLocation location) {
+                if (key.equals(motorista.getId())){
+
+                    //Alterar status da requisicao
+                    requisicao.setStatus(Requisicao.STATUS_VIAGEM);
+                    requisicao.atualizarStatus();
+
+                    //remover listener
+                    geoQuery.removeAllListeners();
+                    circle.remove();
+                }
+            }
+
+            @Override
+            public void onKeyExited(String key) {
+
+            }
+
+            @Override
+            public void onKeyMoved(String key, GeoLocation location) {
+
+            }
+
+            @Override
+            public void onGeoQueryReady() {
+
+            }
+
+            @Override
+            public void onGeoQueryError(DatabaseError error) {
+
+            }
+        });
     }
 
     private void centralizarDoisMarcadores(Marker marcador1, Marker marcador2){
