@@ -137,30 +137,62 @@ public class CorridaActivity extends AppCompatActivity
             case Requisicao.STATUS_VIAGEM:
                 requisicaoViagem();
                 break;
+            case Requisicao.STATUS_FINALIZADA:
+                requisicaoFinalizada();
+                break;
         }
     }
 
-    private void requisicaoViagem(){
+    private void requisicaoFinalizada(){
+
+        fabRota.setVisibility(View.GONE);
+
+        if (marcadorMotorista != null)
+            marcadorMotorista.remove();
+
+        if (marcadorDestino != null)
+            marcadorDestino.remove();
+
+        //Exibir local de destino
+        LatLng localDestino = new LatLng(
+              Double.parseDouble(destino.getLatitude()),
+              Double.parseDouble(destino.getLongitude())
+        );
+        adicionarMarcadorDestino(localDestino,"Destino");
+
+        centralizarMarcador(localDestino);
+
+        buttonAceitarCorrida.setText("Corrida finalizada: R$ 20,00");
+
+    }
+
+    private void centralizarMarcador(LatLng local){
+        mMap.moveCamera(
+                CameraUpdateFactory.newLatLngZoom(local, 20)
+        );
+    }
+
+    private void requisicaoViagem() {
 
         //Alterar interface
         fabRota.setVisibility(View.VISIBLE);
         buttonAceitarCorrida.setText("A caminho do destino");
 
         //Exibir marcador do motorista
-        adicionarMarcadorMotorista(localMotorista,motorista.getNome());
+        adicionarMarcadorMotorista(localMotorista, motorista.getNome());
 
         //Exibir marcador do destino
         LatLng localDestino = new LatLng(
                 Double.parseDouble(destino.getLatitude()),
                 Double.parseDouble(destino.getLongitude())
         );
-        adicionarMarcadorDestino(localDestino,"Destino");
+        adicionarMarcadorDestino(localDestino, "Destino");
 
         //Centralizar motorista/destino
-        centralizarDoisMarcadores(marcadorMotorista,marcadorDestino);
+        centralizarDoisMarcadores(marcadorMotorista, marcadorDestino);
 
         //Iniciar monitoramento do motorista/passageiro
-        iniciarMonitoramento(motorista,localDestino,Requisicao.STATUS_FINALIZADA);
+        iniciarMonitoramento(motorista, localDestino, Requisicao.STATUS_FINALIZADA);
 
     }
 
@@ -170,9 +202,7 @@ public class CorridaActivity extends AppCompatActivity
         //Exibir marcador do motorista
         adicionarMarcadorMotorista(localMotorista, motorista.getNome());
 
-        mMap.moveCamera(
-                CameraUpdateFactory.newLatLngZoom(localMotorista, 20)
-        );
+        centralizarMarcador(localMotorista);
     }
 
     private void requisicaoACaminho() {
@@ -189,7 +219,7 @@ public class CorridaActivity extends AppCompatActivity
         centralizarDoisMarcadores(marcadorMotorista, marcadorPassageiro);
 
         //Iniciar monitoramento do motorista/passageiro
-        iniciarMonitoramento(motorista,localPassageiro,Requisicao.STATUS_VIAGEM);
+        iniciarMonitoramento(motorista, localPassageiro, Requisicao.STATUS_VIAGEM);
     }
 
     private void iniciarMonitoramento(final Usuario uOrigem, LatLng localDestino, final String status) {
@@ -422,7 +452,7 @@ public class CorridaActivity extends AppCompatActivity
 
                     //Abrir rota
                     String latLong = lat + "," + lon;
-                    Uri uri = Uri.parse("google.navigation:q=<" + latLong + ">&mode=d");
+                    Uri uri = Uri.parse("google.navigation:q=" + latLong + "&mode=d");
                     Intent mapIntent = new Intent(Intent.ACTION_VIEW, uri);
                     mapIntent.setPackage("com.google.android.apps.maps");
                     startActivity(mapIntent);
