@@ -159,6 +159,9 @@ public class CorridaActivity extends AppCompatActivity
         //Centralizar motorista/destino
         centralizarDoisMarcadores(marcadorMotorista,marcadorDestino);
 
+        //Iniciar monitoramento do motorista/passageiro
+        iniciarMonitoramento(motorista,localDestino,Requisicao.STATUS_FINALIZADA);
+
     }
 
     private void requisicaoAguardando() {
@@ -186,10 +189,10 @@ public class CorridaActivity extends AppCompatActivity
         centralizarDoisMarcadores(marcadorMotorista, marcadorPassageiro);
 
         //Iniciar monitoramento do motorista/passageiro
-        iniciarMonitoramentoCorrida(passageiro, motorista);
+        iniciarMonitoramento(motorista,localPassageiro,Requisicao.STATUS_VIAGEM);
     }
 
-    private void iniciarMonitoramentoCorrida(Usuario p, Usuario m) {
+    private void iniciarMonitoramento(final Usuario uOrigem, LatLng localDestino, final String status) {
 
         //Inicializar Geofire
         DatabaseReference localUsuarioRef = ConfiguracaoFirebase.getFirebaseDatabase().child("local_usuario");
@@ -198,23 +201,23 @@ public class CorridaActivity extends AppCompatActivity
         //Adicionar círculo no pasageiro
         final Circle circle = mMap.addCircle(
                 new CircleOptions()
-                        .center(localPassageiro)
+                        .center(localDestino)
                         .radius(50)
                         .fillColor(Color.argb(90, 255, 153, 0))
                         .strokeColor(Color.argb(190, 255, 152, 0))
         );
 
         final GeoQuery geoQuery = geoFire.queryAtLocation(
-                new GeoLocation(localPassageiro.latitude, localPassageiro.longitude),
+                new GeoLocation(localDestino.latitude, localDestino.longitude),
                 0.05
         );
         geoQuery.addGeoQueryEventListener(new GeoQueryEventListener() {
             @Override
             public void onKeyEntered(String key, GeoLocation location) {
-                if (key.equals(motorista.getId())) {
+                if (key.equals(uOrigem.getId())) {
 
                     //Alterar status da requisicao
-                    requisicao.setStatus(Requisicao.STATUS_VIAGEM);
+                    requisicao.setStatus(status);
                     requisicao.atualizarStatus();
 
                     //remover listener
