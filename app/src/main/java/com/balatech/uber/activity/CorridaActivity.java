@@ -13,6 +13,7 @@ import android.os.Bundle;
 
 import com.balatech.uber.config.ConfiguracaoFirebase;
 import com.balatech.uber.helper.UsuarioFirebase;
+import com.balatech.uber.model.Destino;
 import com.balatech.uber.model.Requisicao;
 import com.balatech.uber.model.Usuario;
 import com.firebase.geofire.GeoFire;
@@ -61,9 +62,11 @@ public class CorridaActivity extends AppCompatActivity
     private Requisicao requisicao;
     private Marker marcadorMotorista;
     private Marker marcadorPassageiro;
+    private Marker marcadorDestino;
     private String statusRequisicao;
     private Boolean requisicaoAtiva;
     private FloatingActionButton fabRota;
+    private Destino destino;
 
     //Componente
     private Button buttonAceitarCorrida;
@@ -84,8 +87,8 @@ public class CorridaActivity extends AppCompatActivity
             motorista = (Usuario) extras.getSerializable("motorista");
 
             localMotorista = new LatLng(
-              Double.parseDouble(motorista.getLatitude()),
-              Double.parseDouble(motorista.getLongitude())
+                    Double.parseDouble(motorista.getLatitude()),
+                    Double.parseDouble(motorista.getLongitude())
             );
 
             idRequisicao = extras.getString("idRequisicao");
@@ -101,7 +104,7 @@ public class CorridaActivity extends AppCompatActivity
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 //Recuperar requisicao
                 requisicao = dataSnapshot.getValue(Requisicao.class);
-                if (requisicao != null){
+                if (requisicao != null) {
                     passageiro = requisicao.getPassageiro();
                     localPassageiro = new LatLng(
                             Double.parseDouble(passageiro.getLatitude()),
@@ -109,6 +112,7 @@ public class CorridaActivity extends AppCompatActivity
                     );
 
                     statusRequisicao = requisicao.getStatus();
+                    destino = requisicao.getDestino();
                     alteraInterfaceStatusRequisicao(statusRequisicao);
                 }
 
@@ -122,7 +126,7 @@ public class CorridaActivity extends AppCompatActivity
 
     }
 
-    private void alteraInterfaceStatusRequisicao(String status){
+    private void alteraInterfaceStatusRequisicao(String status) {
         switch (status) {
             case Requisicao.STATUS_AGUARDANDO:
                 requisicaoAguardando();
@@ -130,38 +134,62 @@ public class CorridaActivity extends AppCompatActivity
             case Requisicao.STATUS_A_CAMINHO:
                 requisicaoACaminho();
                 break;
+            case Requisicao.STATUS_VIAGEM:
+                requisicaoViagem();
+                break;
         }
+    }
+
+    private void requisicaoViagem(){
+
+        //Alterar interface
+        fabRota.setVisibility(View.VISIBLE);
+        buttonAceitarCorrida.setText("A caminho do destino");
+
+        //Exibir marcador do motorista
+        adicionarMarcadorMotorista(localMotorista,motorista.getNome());
+
+        //Exibir marcador do destino
+        LatLng localDestino = new LatLng(
+                Double.parseDouble(destino.getLatitude()),
+                Double.parseDouble(destino.getLongitude())
+        );
+        adicionarMarcadorDestino(localDestino,"Destino");
+
+        //Centralizar motorista/destino
+        centralizarDoisMarcadores(marcadorMotorista,marcadorDestino);
+
     }
 
     private void requisicaoAguardando() {
         buttonAceitarCorrida.setText("Aceitar corrida");
 
         //Exibir marcador do motorista
-        adicionarMarcadorMotorista(localMotorista,motorista.getNome());
+        adicionarMarcadorMotorista(localMotorista, motorista.getNome());
 
         mMap.moveCamera(
-                CameraUpdateFactory.newLatLngZoom(localMotorista,20)
+                CameraUpdateFactory.newLatLngZoom(localMotorista, 20)
         );
     }
 
-    private void requisicaoACaminho(){
+    private void requisicaoACaminho() {
         buttonAceitarCorrida.setText("A Caminho");
         fabRota.setVisibility(View.VISIBLE);
 
         //Exibir marcador do motorista
-        adicionarMarcadorMotorista(localMotorista,motorista.getNome());
+        adicionarMarcadorMotorista(localMotorista, motorista.getNome());
 
         //Exibir marcador do passageiro
-        adicionarMarcadorPassageiro(localPassageiro,passageiro.getNome());
+        adicionarMarcadorPassageiro(localPassageiro, passageiro.getNome());
 
         //Centralizar marcadores
-        centralizarDoisMarcadores(marcadorMotorista,marcadorPassageiro);
+        centralizarDoisMarcadores(marcadorMotorista, marcadorPassageiro);
 
         //Iniciar monitoramento do motorista/passageiro
-        iniciarMonitoramentoCorrida(passageiro,motorista);
+        iniciarMonitoramentoCorrida(passageiro, motorista);
     }
 
-    private void iniciarMonitoramentoCorrida(Usuario p, Usuario m){
+    private void iniciarMonitoramentoCorrida(Usuario p, Usuario m) {
 
         //Inicializar Geofire
         DatabaseReference localUsuarioRef = ConfiguracaoFirebase.getFirebaseDatabase().child("local_usuario");
@@ -170,20 +198,20 @@ public class CorridaActivity extends AppCompatActivity
         //Adicionar círculo no pasageiro
         final Circle circle = mMap.addCircle(
                 new CircleOptions()
-                .center(localPassageiro)
-                .radius(50)
-                .fillColor(Color.argb(90,255,153,0))
-                .strokeColor(Color.argb(190,255,152,0))
+                        .center(localPassageiro)
+                        .radius(50)
+                        .fillColor(Color.argb(90, 255, 153, 0))
+                        .strokeColor(Color.argb(190, 255, 152, 0))
         );
 
         final GeoQuery geoQuery = geoFire.queryAtLocation(
-                new GeoLocation(localPassageiro.latitude,localPassageiro.longitude),
+                new GeoLocation(localPassageiro.latitude, localPassageiro.longitude),
                 0.05
         );
         geoQuery.addGeoQueryEventListener(new GeoQueryEventListener() {
             @Override
             public void onKeyEntered(String key, GeoLocation location) {
-                if (key.equals(motorista.getId())){
+                if (key.equals(motorista.getId())) {
 
                     //Alterar status da requisicao
                     requisicao.setStatus(Requisicao.STATUS_VIAGEM);
@@ -217,7 +245,7 @@ public class CorridaActivity extends AppCompatActivity
         });
     }
 
-    private void centralizarDoisMarcadores(Marker marcador1, Marker marcador2){
+    private void centralizarDoisMarcadores(Marker marcador1, Marker marcador2) {
 
         LatLngBounds.Builder builder = new LatLngBounds.Builder();
 
@@ -228,18 +256,18 @@ public class CorridaActivity extends AppCompatActivity
 
         int largura = getResources().getDisplayMetrics().widthPixels;
         int altura = getResources().getDisplayMetrics().heightPixels;
-        int espacoInterno = (int) (largura*0.20);
+        int espacoInterno = (int) (largura * 0.20);
 
         mMap.moveCamera(
-                CameraUpdateFactory.newLatLngBounds(bounds,largura,altura,espacoInterno)
+                CameraUpdateFactory.newLatLngBounds(bounds, largura, altura, espacoInterno)
         );
 
     }
 
-    private void adicionarMarcadorMotorista(LatLng localizacao, String titulo){
+    private void adicionarMarcadorMotorista(LatLng localizacao, String titulo) {
 
         if (marcadorMotorista != null)
-        marcadorMotorista.remove();
+            marcadorMotorista.remove();
 
         marcadorMotorista = mMap.addMarker(
                 new MarkerOptions()
@@ -250,16 +278,33 @@ public class CorridaActivity extends AppCompatActivity
 
     }
 
-    private void adicionarMarcadorPassageiro(LatLng localizacao, String titulo){
+    private void adicionarMarcadorPassageiro(LatLng localizacao, String titulo) {
 
         if (marcadorPassageiro != null)
-        marcadorPassageiro.remove();
+            marcadorPassageiro.remove();
 
         marcadorPassageiro = mMap.addMarker(
                 new MarkerOptions()
                         .position(localizacao)
                         .title(titulo)
                         .icon(BitmapDescriptorFactory.fromResource(R.drawable.usuario))
+        );
+
+    }
+
+    private void adicionarMarcadorDestino(LatLng localizacao, String titulo) {
+
+        if (marcadorPassageiro != null)
+            marcadorPassageiro.remove();
+
+        if (marcadorDestino != null)
+            marcadorDestino.remove();
+
+        marcadorDestino = mMap.addMarker(
+                new MarkerOptions()
+                        .position(localizacao)
+                        .title(titulo)
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.destino))
         );
 
     }
@@ -299,7 +344,7 @@ public class CorridaActivity extends AppCompatActivity
                 localMotorista = new LatLng(latitude, longitude);
 
                 //Atualizar Geofire
-                UsuarioFirebase.atualizarDadosLocalizacao(latitude,longitude);
+                UsuarioFirebase.atualizarDadosLocalizacao(latitude, longitude);
 
                 alteraInterfaceStatusRequisicao(statusRequisicao);
             }
@@ -356,9 +401,9 @@ public class CorridaActivity extends AppCompatActivity
             public void onClick(View v) {
                 String status = statusRequisicao;
 
-                if (status!= null){
+                if (status != null) {
 
-                    String lat ="";
+                    String lat = "";
                     String lon = "";
 
                     switch (status) {
@@ -367,13 +412,14 @@ public class CorridaActivity extends AppCompatActivity
                             lon = String.valueOf(localPassageiro.longitude);
                             break;
                         case Requisicao.STATUS_VIAGEM:
-
+                            lat = destino.getLatitude();
+                            lon = destino.getLongitude();
                             break;
                     }
 
                     //Abrir rota
                     String latLong = lat + "," + lon;
-                    Uri uri = Uri.parse("google.navigation:q=<"+latLong+">&mode=d");
+                    Uri uri = Uri.parse("google.navigation:q=<" + latLong + ">&mode=d");
                     Intent mapIntent = new Intent(Intent.ACTION_VIEW, uri);
                     mapIntent.setPackage("com.google.android.apps.maps");
                     startActivity(mapIntent);
@@ -387,9 +433,9 @@ public class CorridaActivity extends AppCompatActivity
     @Override
     public boolean onSupportNavigateUp() {
 
-        if (requisicaoAtiva){
+        if (requisicaoAtiva) {
             Toast.makeText(this, "Necessário encerrar a requisicao atual", Toast.LENGTH_SHORT).show();
-        }else {
+        } else {
             Intent i = new Intent(CorridaActivity.this, RequisicoesActivity.class);
             startActivity(i);
         }

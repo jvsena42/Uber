@@ -89,6 +89,7 @@ public class RequisicoesActivity extends AppCompatActivity {
 
                     if (requisicao.getStatus().equals(Requisicao.STATUS_A_CAMINHO)
                         || requisicao.getStatus().equals(Requisicao.STATUS_VIAGEM)){
+                        motorista = requisicao.getMotorista();
                         abrirTelaCorrida(requisicao.getId(),motorista, true);
                     }
 
@@ -150,6 +151,12 @@ public class RequisicoesActivity extends AppCompatActivity {
         recyclerRequisicoes.setLayoutManager(layoutManager);
         recyclerRequisicoes.setAdapter(requisicoesAdapter);
 
+
+
+        recuperarRequisicoes();
+    }
+
+    private void eventoCliqueRecyclerView(){
         //Adicionar evento de clique no recyclerview
         recyclerRequisicoes.addOnItemTouchListener(
                 new RecyclerItemClickListener(getApplicationContext(),
@@ -172,8 +179,6 @@ public class RequisicoesActivity extends AppCompatActivity {
                             }
                         })
         );
-
-        recuperarRequisicoes();
     }
 
     private void recuperarRequisicoes(){
@@ -228,6 +233,8 @@ public class RequisicoesActivity extends AppCompatActivity {
                 if (!latitude.isEmpty() && !longitude.isEmpty()){
                     motorista.setLatitude(latitude);
                     motorista.setLongitude(longitude);
+
+                    eventoCliqueRecyclerView();
                     locationManager.removeUpdates(locationListener);
                     requisicoesAdapter.notifyDataSetChanged();
                 }
