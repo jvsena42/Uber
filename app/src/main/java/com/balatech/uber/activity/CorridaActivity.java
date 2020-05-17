@@ -12,6 +12,7 @@ import android.net.Uri;
 import android.os.Bundle;
 
 import com.balatech.uber.config.ConfiguracaoFirebase;
+import com.balatech.uber.helper.Local;
 import com.balatech.uber.helper.UsuarioFirebase;
 import com.balatech.uber.model.Destino;
 import com.balatech.uber.model.Requisicao;
@@ -47,6 +48,8 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.ValueEventListener;
+
+import java.text.DecimalFormat;
 
 public class CorridaActivity extends AppCompatActivity
         implements OnMapReadyCallback {
@@ -146,6 +149,7 @@ public class CorridaActivity extends AppCompatActivity
     private void requisicaoFinalizada(){
 
         fabRota.setVisibility(View.GONE);
+        requisicaoAtiva = false;
 
         if (marcadorMotorista != null)
             marcadorMotorista.remove();
@@ -162,7 +166,13 @@ public class CorridaActivity extends AppCompatActivity
 
         centralizarMarcador(localDestino);
 
-        buttonAceitarCorrida.setText("Corrida finalizada: R$ 20,00");
+        //Calcular distância
+        float distancia = Local.calcularDistancia(localPassageiro,localDestino);
+        float valor = distancia*4;
+        DecimalFormat decimalFormat = new DecimalFormat("0.00");
+        String resultado = decimalFormat.format(valor);
+
+        buttonAceitarCorrida.setText("Corrida finalizada: R$ " + resultado);
 
     }
 
