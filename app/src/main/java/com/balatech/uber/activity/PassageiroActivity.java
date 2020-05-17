@@ -3,6 +3,7 @@ package com.balatech.uber.activity;
 import android.Manifest;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Camera;
 import android.location.Address;
@@ -130,15 +131,17 @@ public class PassageiroActivity extends AppCompatActivity
                     //Recuperar requisicao
                     requisicao = dataSnapshot.getValue(Requisicao.class);
                     if (requisicao != null) {
-                        passageiro = requisicao.getPassageiro();
-                        localPassageiro = new LatLng(
-                                Double.parseDouble(passageiro.getLatitude()),
-                                Double.parseDouble(passageiro.getLongitude())
-                        );
+                        if (!requisicao.getStatus().equals(Requisicao.STATUS_ENCERRADA)) {
+                            passageiro = requisicao.getPassageiro();
+                            localPassageiro = new LatLng(
+                                    Double.parseDouble(passageiro.getLatitude()),
+                                    Double.parseDouble(passageiro.getLongitude())
+                            );
 
-                        statusRequisicao = requisicao.getStatus();
-                        destino = requisicao.getDestino();
-                        alteraInterfaceStatusRequisicao(statusRequisicao);
+                            statusRequisicao = requisicao.getStatus();
+                            destino = requisicao.getDestino();
+                            alteraInterfaceStatusRequisicao(statusRequisicao);
+                        }
                     }
 
                 }
@@ -171,6 +174,10 @@ public class PassageiroActivity extends AppCompatActivity
                     break;
 
             }
+        }else{
+            //Adicionar marcador passageiro
+            adicionarMarcadorPassageiro(localPassageiro,"Seu local");
+            centralizarMarcador(localPassageiro);
         }
 
     }
@@ -237,6 +244,23 @@ public class PassageiroActivity extends AppCompatActivity
 
         buttonChamarUber.setText("Corrida finalizada - R$" + resultado);
 
+        AlertDialog.Builder builder = new AlertDialog.Builder(this)
+                .setTitle("Total da viagem")
+                .setMessage("Sua viagem custou: R$" + resultado)
+                .setCancelable(false)
+                .setNegativeButton("Encerrar viagem", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                        requisicao.setStatus(Requisicao.STATUS_ENCERRADA);
+                        requisicao.atualizarStatus();
+
+                        finish();
+                        startActivity(new Intent(getIntent()));
+                    }
+                });
+        AlertDialog dialog = builder.create();
+        dialog.show();
 
     }
 
@@ -442,6 +466,16 @@ public class PassageiroActivity extends AppCompatActivity
                     if (statusRequisicao.equals(Requisicao.STATUS_VIAGEM)
                             || statusRequisicao.equals(Requisicao.STATUS_FINALIZADA)){
                         locationManager.removeUpdates(locationListener);
+                    }else {
+                        //Solicitar atualizações de localização
+                        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                            locationManager.requestLocationUpdates(
+                                    locationManager.GPS_PROVIDER,
+                                    10000,
+                                    10,
+                                    locationListener
+                            );
+                        }
                     }
                 }
 

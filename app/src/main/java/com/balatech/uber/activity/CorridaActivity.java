@@ -489,6 +489,12 @@ public class CorridaActivity extends AppCompatActivity
             startActivity(i);
         }
 
+        //Verificar o status da requisicao para encerrar
+        if (statusRequisicao != null){
+            requisicao.setStatus(Requisicao.STATUS_ENCERRADA);
+            requisicao.atualizarStatus();
+        }
+
         return false;
     }
 }
