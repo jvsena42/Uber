@@ -389,6 +389,12 @@ public class CorridaActivity extends AppCompatActivity
                 //Atualizar Geofire
                 UsuarioFirebase.atualizarDadosLocalizacao(latitude, longitude);
 
+                //Atualizar localização do motorista no firebase
+                motorista.setLatitude(String.valueOf(latitude));
+                motorista.setLongitude(String.valueOf(longitude));
+                requisicao.setMotorista(motorista);
+                requisicao.atualizarLocalizacaoMotorista();
+
                 alteraInterfaceStatusRequisicao(statusRequisicao);
             }
 

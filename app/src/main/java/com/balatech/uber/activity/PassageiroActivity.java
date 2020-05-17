@@ -23,6 +23,8 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
@@ -71,6 +73,15 @@ public class PassageiroActivity extends AppCompatActivity
     private DatabaseReference firebaseRef;
     private Requisicao requisicao;
 
+    private Usuario passageiro;
+    private String statusRequisicao;
+    private Destino destino;
+    private Marker marcadorMotorista;
+    private Marker marcadorPassageiro;
+    private Marker marcadorDestino;
+    private Usuario motorista;
+    private LatLng localMotorista;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,7 +95,7 @@ public class PassageiroActivity extends AppCompatActivity
 
     }
 
-    private void verificaStatusRequisicao(){
+    private void verificaStatusRequisicao() {
         Usuario usuarioLogado = UsuarioFirebase.getDadosUsuarioLogado();
         DatabaseReference requisicoes = firebaseRef.child("requisicoes");
         Query requisicaoPesquisa = requisicoes.orderByChild("passageiro/id")
@@ -95,25 +106,39 @@ public class PassageiroActivity extends AppCompatActivity
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
                 List<Requisicao> lista = new ArrayList<>();
-                for (DataSnapshot ds : dataSnapshot.getChildren()){
+                for (DataSnapshot ds : dataSnapshot.getChildren()) {
                     requisicao = ds.getValue(Requisicao.class);
+
+                    if (requisicao.getMotorista() != null){
+                        motorista = requisicao.getMotorista();
+                        localMotorista = new LatLng(
+                            Double.parseDouble(motorista.getLatitude()),
+                            Double.parseDouble(motorista.getLongitude())
+                        );
+                    }
+
                     lista.add(requisicao);
 
                 }
 
                 Collections.reverse(lista);
-
-                if (lista != null && lista.size()>0){
+                if (lista != null && lista.size() > 0) {
                     requisicao = lista.get(0);
 
-                    switch (requisicao.getStatus()){
-                        case Requisicao.STATUS_AGUARDANDO:
-                            linearLayoutDestino.setVisibility(View.GONE);
-                            buttonChamarUber.setText("Cancelar Uber");
-                            uberChamado = true;
-                            break;
+                    //Recuperar requisicao
+                    requisicao = dataSnapshot.getValue(Requisicao.class);
+                    if (requisicao != null) {
+                        passageiro = requisicao.getPassageiro();
+                        localPassageiro = new LatLng(
+                                Double.parseDouble(passageiro.getLatitude()),
+                                Double.parseDouble(passageiro.getLongitude())
+                        );
 
+                        statusRequisicao = requisicao.getStatus();
+                        destino = requisicao.getDestino();
+                        alteraInterfaceStatusRequisicao(statusRequisicao);
                     }
+
                 }
 
             }
@@ -123,6 +148,111 @@ public class PassageiroActivity extends AppCompatActivity
 
             }
         });
+
+    }
+
+    private void alteraInterfaceStatusRequisicao(String status) {
+
+        switch (requisicao.getStatus()) {
+            case Requisicao.STATUS_AGUARDANDO:
+                requisicaoAguardando();
+                break;
+            case Requisicao.STATUS_A_CAMINHO:
+                requisicaoACaminho();
+                break;
+            case Requisicao.STATUS_VIAGEM:
+                requisicaoViagem();
+                break;
+            case Requisicao.STATUS_FINALIZADA:
+                requisicaoFinalizada();
+                break;
+
+        }
+
+    }
+
+    private void requisicaoAguardando() {
+        linearLayoutDestino.setVisibility(View.GONE);
+        buttonChamarUber.setText("Cancelar Uber");
+        uberChamado = true;
+
+        adicionarMarcadorPassageiro(localPassageiro,passageiro.getNome());
+        centralizarMarcador(localPassageiro);
+    }
+
+    private void requisicaoACaminho() {
+        linearLayoutDestino.setVisibility(View.GONE);
+        buttonChamarUber.setText("Motorista a caminho");
+        uberChamado = true;
+
+        //Adicionar marcador passageiro
+        adicionarMarcadorPassageiro(localPassageiro,passageiro.getNome());
+
+        //Adicionar marcador motorista
+        adicionarMarcadorMotorista(localMotorista,motorista.getNome());
+
+        //centralizar pasasgeiro/motorista
+        centralizarDoisMarcadores(marcadorMotorista,marcadorPassageiro);
+    }
+
+    private void requisicaoViagem() {
+
+    }
+
+    private void requisicaoFinalizada() {
+
+    }
+
+    private void adicionarMarcadorPassageiro(LatLng localizacao, String titulo) {
+
+        if (marcadorPassageiro != null)
+            marcadorPassageiro.remove();
+
+        marcadorPassageiro = mMap.addMarker(
+                new MarkerOptions()
+                        .position(localizacao)
+                        .title(titulo)
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.usuario))
+        );
+
+    }
+
+    private void adicionarMarcadorMotorista(LatLng localizacao, String titulo) {
+
+        if (marcadorMotorista != null)
+            marcadorMotorista.remove();
+
+        marcadorMotorista = mMap.addMarker(
+                new MarkerOptions()
+                        .position(localizacao)
+                        .title(titulo)
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.carro))
+        );
+
+    }
+
+    private void centralizarMarcador(LatLng local){
+        mMap.moveCamera(
+                CameraUpdateFactory.newLatLngZoom(local, 20)
+        );
+    }
+
+    private void centralizarDoisMarcadores(Marker marcador1, Marker marcador2) {
+
+        LatLngBounds.Builder builder = new LatLngBounds.Builder();
+
+        builder.include(marcador1.getPosition());
+        builder.include(marcador2.getPosition());
+
+        LatLngBounds bounds = builder.build();
+
+        int largura = getResources().getDisplayMetrics().widthPixels;
+        int altura = getResources().getDisplayMetrics().heightPixels;
+        int espacoInterno = (int) (largura * 0.20);
+
+        mMap.moveCamera(
+                CameraUpdateFactory.newLatLngBounds(bounds, largura, altura, espacoInterno)
+        );
 
     }
 
@@ -144,15 +274,15 @@ public class PassageiroActivity extends AppCompatActivity
 
     }
 
-    public void chamarUber(View view){
+    public void chamarUber(View view) {
 
-        if (!uberChamado){
+        if (!uberChamado) {
 
             String enderecoDestino = editDestino.getText().toString();
 
-            if ( !enderecoDestino.isEmpty() && enderecoDestino!=null){
+            if (!enderecoDestino.isEmpty() && enderecoDestino != null) {
                 Address addressDestino = recuperarEndereco(enderecoDestino);
-                if (addressDestino != null){
+                if (addressDestino != null) {
                     final Destino destino = new Destino();
                     destino.setCidade(addressDestino.getAdminArea());
                     destino.setCep(addressDestino.getPostalCode());
@@ -190,10 +320,10 @@ public class PassageiroActivity extends AppCompatActivity
                     AlertDialog dialog = builder.create();
                     dialog.show();
                 }
-            }else {
+            } else {
                 Toast.makeText(this, "Informe o endereco de destino", Toast.LENGTH_SHORT).show();
             }
-        }else {
+        } else {
             //Cancelar a requisicao
             uberChamado = false;
         }
@@ -201,7 +331,7 @@ public class PassageiroActivity extends AppCompatActivity
 
     }
 
-    private void salvarRequisicao(Destino destino){
+    private void salvarRequisicao(Destino destino) {
 
         Requisicao requisicao = new Requisicao();
         requisicao.setDestino(destino);
@@ -218,15 +348,15 @@ public class PassageiroActivity extends AppCompatActivity
 
     }
 
-    private Address recuperarEndereco(String endereco){
+    private Address recuperarEndereco(String endereco) {
 
         Geocoder geocoder = new Geocoder(this, Locale.getDefault());
         try {
-            List<Address> listaEnderecos = geocoder.getFromLocationName(endereco,1);
-            if (listaEnderecos != null && listaEnderecos.size() >0){
+            List<Address> listaEnderecos = geocoder.getFromLocationName(endereco, 1);
+            if (listaEnderecos != null && listaEnderecos.size() > 0) {
                 Address address = listaEnderecos.get(0);
 
-                return  address;
+                return address;
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -249,7 +379,7 @@ public class PassageiroActivity extends AppCompatActivity
                 localPassageiro = new LatLng(latitude, longitude);
 
                 //Atualizar Geofire
-                UsuarioFirebase.atualizarDadosLocalizacao(latitude,longitude);
+                UsuarioFirebase.atualizarDadosLocalizacao(latitude, longitude);
 
                 mMap.clear();
                 mMap.addMarker(
@@ -281,7 +411,7 @@ public class PassageiroActivity extends AppCompatActivity
         };
 
         //Solicitar atualizações de localização
-        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ) {
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             locationManager.requestLocationUpdates(
                     locationManager.GPS_PROVIDER,
                     10000,
@@ -312,13 +442,13 @@ public class PassageiroActivity extends AppCompatActivity
         return super.onOptionsItemSelected(item);
     }
 
-    private void inicializarComponentes(){
+    private void inicializarComponentes() {
         Toolbar toolbar = findViewById(R.id.toolbar);
         toolbar.setTitle("Iniciar uma viagem");
         setSupportActionBar(toolbar);
 
         //Inicializar componentes
-        editDestino= findViewById(R.id.editDestino);
+        editDestino = findViewById(R.id.editDestino);
         linearLayoutDestino = findViewById(R.id.linearLayoutDestino);
         buttonChamarUber = findViewById(R.id.buttonChamarUber);
 
